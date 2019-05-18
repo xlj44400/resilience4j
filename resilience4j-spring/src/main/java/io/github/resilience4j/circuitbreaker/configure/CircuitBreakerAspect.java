@@ -81,8 +81,10 @@ public class CircuitBreakerAspect implements Ordered {
 		if (StringUtils.isEmpty(backendMonitored.fallbackMethod())) {
 			return proceed(proceedingJoinPoint, methodName, circuitBreaker, returnType);
 		}
+		FallbackMethod fallbackMethod = FallbackMethod.builder().recoveryMethodName(backendMonitored.fallbackMethod())
+				.originalMethod(method).originalMethodArgs(proceedingJoinPoint.getArgs())
+				.targetObject(proceedingJoinPoint.getTarget()).build();
 
-		FallbackMethod fallbackMethod = new FallbackMethod(backendMonitored.fallbackMethod(), method, proceedingJoinPoint.getArgs(), proceedingJoinPoint.getTarget());
         return fallbackDecorators.decorate(fallbackMethod, () -> proceed(proceedingJoinPoint, methodName, circuitBreaker, returnType)).apply();
 	}
 

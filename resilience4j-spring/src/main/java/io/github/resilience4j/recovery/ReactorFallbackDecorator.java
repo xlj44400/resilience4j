@@ -57,7 +57,7 @@ public class ReactorFallbackDecorator implements FallbackDecorator {
     private <T> Function<? super Throwable, ? extends Publisher<? extends T>> reactorOnErrorResume(FallbackMethod recoveryMethod, Function<? super Throwable, ? extends Publisher<? extends T>> errorFunction) {
         return (throwable) -> {
             try {
-                return (Publisher<? extends T>) recoveryMethod.recover(throwable);
+                return (Publisher<? extends T>) recoveryMethod.fallback(throwable);
             } catch (Throwable recoverThrowable) {
                 return errorFunction.apply(recoverThrowable);
             }

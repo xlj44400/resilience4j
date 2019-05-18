@@ -73,20 +73,22 @@ public class RateLimiterAspect implements Ordered {
 
 	@Around(value = "matchAnnotatedClassOrMethod(limitedService)", argNames = "proceedingJoinPoint, limitedService")
 	public Object rateLimiterAroundAdvice(ProceedingJoinPoint proceedingJoinPoint, @Nullable RateLimiter limitedService) throws Throwable {
-		RateLimiter targetService = limitedService;
 		Method method = ((MethodSignature) proceedingJoinPoint.getSignature()).getMethod();
 		String methodName = method.getDeclaringClass().getName() + "#" + method.getName();
-		if (targetService == null) {
-			targetService = getRateLimiterAnnotation(proceedingJoinPoint);
+		if (limitedService == null) {
+			limitedService = getRateLimiterAnnotation(proceedingJoinPoint);
 		}
-		String name = targetService.name();
+		String name = limitedService.name();
 		Class<?> returnType = method.getReturnType();
         io.github.resilience4j.ratelimiter.RateLimiter rateLimiter = getOrCreateRateLimiter(methodName, name);
-		if (StringUtils.isEmpty(targetService.fallbackMethod())) {
+		if (StringUtils.isEmpty(limitedService.fallbackMethod())) {
 			return proceed(proceedingJoinPoint, methodName, returnType, rateLimiter);
 		}
 
-		FallbackMethod fallbackMethod = new FallbackMethod(targetService.fallbackMethod(), method, proceedingJoinPoint.getArgs(), proceedingJoinPoint.getTarget());
+		FallbackMethod fallbackMethod = FallbackMethod.builder().recoveryMethodName(limitedService.fallbackMethod())
+				.originalMethod(method).originalMethodArgs(proceedingJoinPoint.getArgs())
+				.targetObject(proceedingJoinPoint.getTarget()).build();
+
         return fallbackDecorators.decorate(fallbackMethod, () -> proceed(proceedingJoinPoint, methodName, returnType, rateLimiter)).apply();
 	}
 

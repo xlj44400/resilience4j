@@ -41,7 +41,7 @@ public class CompletionStageFallbackDecorator implements FallbackDecorator {
             completionStage.whenComplete((result, throwable) -> {
                 if (throwable != null) {
                     try {
-                        ((CompletionStage) recoveryMethod.recover((Throwable) throwable))
+                        ((CompletionStage) recoveryMethod.fallback((Throwable) throwable))
                                 .whenComplete((recoveryResult, recoveryThrowable) -> {
                                     if (recoveryThrowable != null) {
                                         promise.completeExceptionally((Throwable) recoveryThrowable);

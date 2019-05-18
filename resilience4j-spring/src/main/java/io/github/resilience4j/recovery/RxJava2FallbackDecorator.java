@@ -70,7 +70,7 @@ public class RxJava2FallbackDecorator implements FallbackDecorator {
     private <T> io.reactivex.functions.Function<Throwable, T> rxJava2OnErrorResumeNext(FallbackMethod recoveryMethod, Function<? super Throwable, ? extends T> errorFunction) {
         return (throwable) -> {
             try {
-                return (T) recoveryMethod.recover(throwable);
+                return (T) recoveryMethod.fallback(throwable);
             } catch (Throwable recoverThrowable) {
                 return (T) errorFunction.apply(recoverThrowable);
             }
