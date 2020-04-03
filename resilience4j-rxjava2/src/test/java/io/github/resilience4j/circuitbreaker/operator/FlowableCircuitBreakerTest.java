@@ -10,7 +10,8 @@ import java.util.concurrent.TimeUnit;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.*;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.never;
 
 /**
  * Unit test for {@link FlowableCircuitBreaker}.
@@ -18,7 +19,7 @@ import static org.mockito.Mockito.*;
 public class FlowableCircuitBreakerTest extends BaseCircuitBreakerTest {
 
     @Test
-    public void shouldSubscribeToFlowableJust() {
+    public void shouldInvokeOnSuccess() {
         given(circuitBreaker.tryAcquirePermission()).willReturn(true);
 
         Flowable.just("Event 1", "Event 2")
@@ -26,12 +27,13 @@ public class FlowableCircuitBreakerTest extends BaseCircuitBreakerTest {
             .test()
             .assertResult("Event 1", "Event 2");
 
-        verify(circuitBreaker, times(1)).onSuccess(anyLong());
-        verify(circuitBreaker, never()).onError(anyLong(), any(Throwable.class));
+        then(circuitBreaker).should().onSuccess(anyLong(), any(TimeUnit.class));
+        then(circuitBreaker).should(never())
+            .onError(anyLong(), any(TimeUnit.class), any(Throwable.class));
     }
 
     @Test
-    public void shouldPropagateError() {
+    public void shouldInvokeOnError() {
         given(circuitBreaker.tryAcquirePermission()).willReturn(true);
 
         Flowable.error(new IOException("BAM!"))
@@ -41,8 +43,9 @@ public class FlowableCircuitBreakerTest extends BaseCircuitBreakerTest {
             .assertError(IOException.class)
             .assertNotComplete();
 
-        verify(circuitBreaker, times(1)).onError(anyLong(), any(IOException.class));
-        verify(circuitBreaker, never()).onSuccess(anyLong());
+        then(circuitBreaker).should()
+            .onError(anyLong(), any(TimeUnit.class), any(IOException.class));
+        then(circuitBreaker).should(never()).onSuccess(anyLong(), any(TimeUnit.class));
     }
 
     @Test
@@ -56,22 +59,39 @@ public class FlowableCircuitBreakerTest extends BaseCircuitBreakerTest {
             .assertError(CallNotPermittedException.class)
             .assertNotComplete();
 
-        verify(circuitBreaker, never()).onSuccess(anyLong());
-        verify(circuitBreaker, never()).onError(anyLong(), any(Throwable.class));
+        then(circuitBreaker).should(never()).onSuccess(anyLong(), any(TimeUnit.class));
+        then(circuitBreaker).should(never())
+            .onError(anyLong(), any(TimeUnit.class), any(Throwable.class));
     }
 
     @Test
-    public void shouldReleasePermissionOnCancel() {
+    public void shouldInvokeReleasePermissionReleaseOnCancel() {
         given(circuitBreaker.tryAcquirePermission()).willReturn(true);
 
         Flowable.just(1)
-                .delay(1, TimeUnit.DAYS)
-                .compose(CircuitBreakerOperator.of(circuitBreaker))
-                .test()
-                .cancel();
+            .delay(1, TimeUnit.DAYS)
+            .compose(CircuitBreakerOperator.of(circuitBreaker))
+            .test()
+            .cancel();
 
-        verify(circuitBreaker, times(1)).releasePermission();
-        verify(circuitBreaker, never()).onError(anyLong(), any(Throwable.class));
-        verify(circuitBreaker, never()).onSuccess(anyLong());
+        then(circuitBreaker).should().releasePermission();
+        then(circuitBreaker).should(never())
+            .onError(anyLong(), any(TimeUnit.class), any(Throwable.class));
+        then(circuitBreaker).should(never()).onSuccess(anyLong(), any(TimeUnit.class));
+    }
+
+    @Test
+    public void shouldInvokeOnSuccessOnCancelWhenOneEventWasEmitted() {
+        given(circuitBreaker.tryAcquirePermission()).willReturn(true);
+
+        Flowable.just(1, 2, 3)
+            .compose(CircuitBreakerOperator.of(circuitBreaker))
+            .test(1)
+            .cancel();
+
+        then(circuitBreaker).should(never()).releasePermission();
+        then(circuitBreaker).should(never())
+            .onError(anyLong(), any(TimeUnit.class), any(Throwable.class));
+        then(circuitBreaker).should().onSuccess(anyLong(), any(TimeUnit.class));
     }
 }

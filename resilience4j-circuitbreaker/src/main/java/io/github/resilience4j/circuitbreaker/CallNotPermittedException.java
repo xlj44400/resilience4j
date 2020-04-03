@@ -19,19 +19,29 @@
 package io.github.resilience4j.circuitbreaker;
 
 /**
- * A {@link CallNotPermittedException} signals that the CircuitBreaker is HALF_OPEN or OPEN
- * and a call is not permitted to be executed.
+ * A {@link CallNotPermittedException} signals that the CircuitBreaker is HALF_OPEN or OPEN and a
+ * call is not permitted to be executed.
  */
 public class CallNotPermittedException extends RuntimeException {
 
+    private CallNotPermittedException(String message, boolean writableStackTrace) {
+        super(message, null, false, writableStackTrace);
+    }
+
     /**
-     * The constructor with a CircuitBreaker.
+     * Static method to construct a {@link CallNotPermittedException} with a CircuitBreaker.
      *
      * @param circuitBreaker the CircuitBreaker.
      */
-    public CallNotPermittedException(CircuitBreaker circuitBreaker) {
-        super(String.format("CircuitBreaker '%s' is %s and does not permit further calls", circuitBreaker.getName(), circuitBreaker.getState()));
+    public static CallNotPermittedException createCallNotPermittedException(
+        CircuitBreaker circuitBreaker) {
+        boolean writableStackTraceEnabled = circuitBreaker.getCircuitBreakerConfig()
+            .isWritableStackTraceEnabled();
+
+        String message = String
+            .format("CircuitBreaker '%s' is %s and does not permit further calls",
+                circuitBreaker.getName(), circuitBreaker.getState());
+
+        return new CallNotPermittedException(message, writableStackTraceEnabled);
     }
 }
-
-

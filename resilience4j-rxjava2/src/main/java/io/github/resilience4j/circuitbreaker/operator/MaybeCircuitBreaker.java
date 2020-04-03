@@ -16,12 +16,14 @@
 package io.github.resilience4j.circuitbreaker.operator;
 
 import io.github.resilience4j.AbstractMaybeObserver;
-import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
-import io.github.resilience4j.core.StopWatch;
 import io.reactivex.Maybe;
 import io.reactivex.MaybeObserver;
 import io.reactivex.internal.disposables.EmptyDisposable;
+
+import java.util.concurrent.TimeUnit;
+
+import static io.github.resilience4j.circuitbreaker.CallNotPermittedException.createCallNotPermittedException;
 
 class MaybeCircuitBreaker<T> extends Maybe<T> {
 
@@ -35,36 +37,36 @@ class MaybeCircuitBreaker<T> extends Maybe<T> {
 
     @Override
     protected void subscribeActual(MaybeObserver<? super T> downstream) {
-        if(circuitBreaker.tryAcquirePermission()){
+        if (circuitBreaker.tryAcquirePermission()) {
             upstream.subscribe(new CircuitBreakerMaybeObserver(downstream));
-        }else{
+        } else {
             downstream.onSubscribe(EmptyDisposable.INSTANCE);
-            downstream.onError(new CallNotPermittedException(circuitBreaker));
+            downstream.onError(createCallNotPermittedException(circuitBreaker));
         }
     }
 
     class CircuitBreakerMaybeObserver extends AbstractMaybeObserver<T> {
 
-        private final StopWatch stopWatch;
+        private final long start;
 
         CircuitBreakerMaybeObserver(MaybeObserver<? super T> downstreamObserver) {
             super(downstreamObserver);
-            this.stopWatch = StopWatch.start();
+            this.start = System.nanoTime();
         }
 
         @Override
         protected void hookOnComplete() {
-            circuitBreaker.onSuccess(stopWatch.stop().toNanos());
+            circuitBreaker.onSuccess(System.nanoTime() - start, TimeUnit.NANOSECONDS);
         }
 
         @Override
         protected void hookOnError(Throwable e) {
-            circuitBreaker.onError(stopWatch.stop().toNanos(), e);
+            circuitBreaker.onError(System.nanoTime() - start, TimeUnit.NANOSECONDS, e);
         }
 
         @Override
         protected void hookOnSuccess() {
-            circuitBreaker.onSuccess(stopWatch.stop().toNanos());
+            circuitBreaker.onSuccess(System.nanoTime() - start, TimeUnit.NANOSECONDS);
         }
 
         @Override

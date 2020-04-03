@@ -8,8 +8,13 @@ import java.util.function.Function;
 import static io.github.resilience4j.retry.IntervalFunctionCompanion.*;
 import static java.util.Objects.requireNonNull;
 
+/**
+ * Use io.github.resilience4j.core.IntervalFunction instead, this class kept for backwards
+ * compatibility
+ */
 @FunctionalInterface
-public interface IntervalFunction extends Function<Integer, Long> {
+@Deprecated
+public interface IntervalFunction extends io.github.resilience4j.core.IntervalFunction {
 
     long DEFAULT_INITIAL_INTERVAL = 500;
     double DEFAULT_MULTIPLIER = 1.5;
@@ -103,7 +108,8 @@ public interface IntervalFunction extends Function<Integer, Long> {
         checkRandomizationFactor(randomizationFactor);
         return (attempt) -> {
             checkAttempt(attempt);
-            final long interval = of(initialIntervalMillis, (x) -> (long) (x * multiplier)).apply(attempt);
+            final long interval = of(initialIntervalMillis, (x) -> (long) (x * multiplier))
+                .apply(attempt);
             return (long) randomize(interval, randomizationFactor);
         };
     }
@@ -113,21 +119,24 @@ public interface IntervalFunction extends Function<Integer, Long> {
         double multiplier,
         double randomizationFactor
     ) {
-        return ofExponentialRandomBackoff(initialInterval.toMillis(), multiplier, randomizationFactor);
+        return ofExponentialRandomBackoff(initialInterval.toMillis(), multiplier,
+            randomizationFactor);
     }
 
     static IntervalFunction ofExponentialRandomBackoff(
         long initialIntervalMillis,
         double multiplier
     ) {
-        return ofExponentialRandomBackoff(initialIntervalMillis, multiplier, DEFAULT_RANDOMIZATION_FACTOR);
+        return ofExponentialRandomBackoff(initialIntervalMillis, multiplier,
+            DEFAULT_RANDOMIZATION_FACTOR);
     }
 
     static IntervalFunction ofExponentialRandomBackoff(
         Duration initialInterval,
         double multiplier
     ) {
-        return ofExponentialRandomBackoff(initialInterval.toMillis(), multiplier, DEFAULT_RANDOMIZATION_FACTOR);
+        return ofExponentialRandomBackoff(initialInterval.toMillis(), multiplier,
+            DEFAULT_RANDOMIZATION_FACTOR);
     }
 
     static IntervalFunction ofExponentialRandomBackoff(
@@ -143,25 +152,30 @@ public interface IntervalFunction extends Function<Integer, Long> {
     }
 
     static IntervalFunction ofExponentialRandomBackoff() {
-        return ofExponentialRandomBackoff(DEFAULT_INITIAL_INTERVAL, DEFAULT_MULTIPLIER, DEFAULT_RANDOMIZATION_FACTOR);
+        return ofExponentialRandomBackoff(DEFAULT_INITIAL_INTERVAL, DEFAULT_MULTIPLIER,
+            DEFAULT_RANDOMIZATION_FACTOR);
     }
 
 }
 
 final class IntervalFunctionCompanion {
+
     private IntervalFunctionCompanion() {
     }
 
+    @SuppressWarnings("squid:S2245") // this is not security-sensitive code
     static double randomize(final double current, final double randomizationFactor) {
         final double delta = randomizationFactor * current;
         final double min = current - delta;
         final double max = current + delta;
+
         return (min + (Math.random() * (max - min + 1)));
     }
 
     static void checkInterval(long interval) {
         if (interval < 10) {
-            throw new IllegalArgumentException("Illegal argument interval: " + interval + " millis");
+            throw new IllegalArgumentException(
+                "Illegal argument interval: " + interval + " millis");
         }
     }
 
@@ -173,7 +187,8 @@ final class IntervalFunctionCompanion {
 
     static void checkRandomizationFactor(double randomizationFactor) {
         if (randomizationFactor < 0.0 || randomizationFactor >= 1.0) {
-            throw new IllegalArgumentException("Illegal argument randomizationFactor: " + randomizationFactor);
+            throw new IllegalArgumentException(
+                "Illegal argument randomizationFactor: " + randomizationFactor);
         }
     }
 

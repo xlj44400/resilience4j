@@ -34,13 +34,14 @@ class ObserverBulkhead<T> extends Observable<T> {
 
     @Override
     protected void subscribeActual(Observer<? super T> downstream) {
-        if(bulkhead.tryAcquirePermission()){
+        if (bulkhead.tryAcquirePermission()) {
             upstream.subscribe(new BulkheadObserver(downstream));
-        }else{
+        } else {
             downstream.onSubscribe(EmptyDisposable.INSTANCE);
-            downstream.onError(new BulkheadFullException(bulkhead));
+            downstream.onError(BulkheadFullException.createBulkheadFullException(bulkhead));
         }
     }
+
     class BulkheadObserver extends AbstractObserver<T> {
 
         BulkheadObserver(Observer<? super T> downstreamObserver) {

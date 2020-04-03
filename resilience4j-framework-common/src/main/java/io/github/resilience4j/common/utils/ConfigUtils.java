@@ -19,93 +19,126 @@ import io.github.resilience4j.common.bulkhead.configuration.BulkheadConfiguratio
 import io.github.resilience4j.common.circuitbreaker.configuration.CircuitBreakerConfigurationProperties;
 import io.github.resilience4j.common.ratelimiter.configuration.RateLimiterConfigurationProperties;
 import io.github.resilience4j.common.retry.configuration.RetryConfigurationProperties;
+import io.github.resilience4j.common.timelimiter.configuration.TimeLimiterConfigurationProperties;
 
 /**
  * resilience4j configuration util
  */
 public class ConfigUtils {
 
-	private ConfigUtils() {
-	}
+    private ConfigUtils() {
+    }
+
+    /**
+     * merge only properties that are not part of retry config if any match the conditions of merge
+     *
+     * @param baseProperties     base config properties
+     * @param instanceProperties instance properties
+     */
+    public static void mergePropertiesIfAny(CircuitBreakerConfigurationProperties.InstanceProperties instanceProperties, CircuitBreakerConfigurationProperties.InstanceProperties baseProperties) {
+        if (instanceProperties.getRegisterHealthIndicator() == null) {
+            if (baseProperties.getRegisterHealthIndicator() != null) {
+                instanceProperties.setRegisterHealthIndicator(baseProperties.getRegisterHealthIndicator());
+            }
+        }
+        if (instanceProperties.getAllowHealthIndicatorToFail() == null) {
+            if (baseProperties.getAllowHealthIndicatorToFail() != null) {
+                instanceProperties.setAllowHealthIndicatorToFail(baseProperties.getAllowHealthIndicatorToFail());
+            }
+        }
+        if (instanceProperties.getEventConsumerBufferSize() == null) {
+            if (baseProperties.getEventConsumerBufferSize() != null) {
+                instanceProperties.setEventConsumerBufferSize(baseProperties.getEventConsumerBufferSize());
+            }
+        }
+    }
+
+    /**
+     * merge only properties that are not part of retry config if any match the conditions of merge
+     *
+     * @param baseProperties     base config properties
+     * @param instanceProperties instance properties
+     */
+    public static void mergePropertiesIfAny(
+        BulkheadConfigurationProperties.InstanceProperties baseProperties,
+        BulkheadConfigurationProperties.InstanceProperties instanceProperties) {
+        if (instanceProperties.getEventConsumerBufferSize() == null) {
+            if (baseProperties.getEventConsumerBufferSize() != null) {
+                instanceProperties
+                    .setEventConsumerBufferSize(baseProperties.getEventConsumerBufferSize());
+            }
+        }
+    }
+
+    /**
+     * merge only properties that are not part of retry config if any match the conditions of merge
+     *
+     * @param baseProperties     base config properties
+     * @param instanceProperties instance properties
+     */
+    public static void mergePropertiesIfAny(RateLimiterConfigurationProperties.InstanceProperties baseProperties, RateLimiterConfigurationProperties.InstanceProperties instanceProperties) {
+        if (instanceProperties.getRegisterHealthIndicator() == null) {
+            if (baseProperties.getRegisterHealthIndicator() != null) {
+                instanceProperties.setRegisterHealthIndicator(baseProperties.getRegisterHealthIndicator());
+            }
+        }
+        if (instanceProperties.getAllowHealthIndicatorToFail() == null) {
+            if (baseProperties.getAllowHealthIndicatorToFail() != null) {
+                instanceProperties.setAllowHealthIndicatorToFail(baseProperties.getAllowHealthIndicatorToFail());
+            }
+        }
+        if (instanceProperties.getSubscribeForEvents() == null) {
+            if (baseProperties.getSubscribeForEvents() != null) {
+                instanceProperties.setSubscribeForEvents(baseProperties.getSubscribeForEvents());
+            }
+        }
+        if (instanceProperties.getEventConsumerBufferSize() == null) {
+            if (baseProperties.getEventConsumerBufferSize() != null) {
+                instanceProperties.setEventConsumerBufferSize(baseProperties.getEventConsumerBufferSize());
+            }
+        }
+    }
+
+    /**
+     * merge only properties that are not part of retry config if any match the conditions of merge
+     *
+     * @param baseProperties     base config properties
+     * @param instanceProperties instance properties
+     */
+    public static void mergePropertiesIfAny(
+        RetryConfigurationProperties.InstanceProperties baseProperties,
+        RetryConfigurationProperties.InstanceProperties instanceProperties) {
+        if (instanceProperties.getEnableExponentialBackoff() == null) {
+            if (baseProperties.getEnableExponentialBackoff() != null) {
+                instanceProperties
+                    .setEnableExponentialBackoff(baseProperties.getEnableExponentialBackoff());
+            }
+        }
+        if (instanceProperties.getEnableRandomizedWait() == null) {
+            if (baseProperties.getEnableRandomizedWait() != null) {
+                instanceProperties
+                    .setEnableRandomizedWait(baseProperties.getEnableRandomizedWait());
+            }
+        }
+        if (instanceProperties.getExponentialBackoffMultiplier() == null) {
+            if (baseProperties.getExponentialBackoffMultiplier() != null) {
+                instanceProperties.setExponentialBackoffMultiplier(
+                    baseProperties.getExponentialBackoffMultiplier());
+            }
+        }
+    }
 
 	/**
-	 * merge only properties that are not part of retry config if any match the conditions of merge
+	 * merge only properties that are not part of timeLimiter config if any match the conditions of merge
 	 *
 	 * @param baseProperties     base config properties
 	 * @param instanceProperties instance properties
 	 */
-	public static void mergePropertiesIfAny(CircuitBreakerConfigurationProperties.InstanceProperties instanceProperties, CircuitBreakerConfigurationProperties.InstanceProperties baseProperties) {
-		if (instanceProperties.getRegisterHealthIndicator() == null) {
-			if (baseProperties.getRegisterHealthIndicator() != null) {
-				instanceProperties.setRegisterHealthIndicator(baseProperties.getRegisterHealthIndicator());
-			}
-		}
-		if (instanceProperties.getEventConsumerBufferSize() == null) {
-			if (baseProperties.getEventConsumerBufferSize() != null) {
-				instanceProperties.setEventConsumerBufferSize(baseProperties.getEventConsumerBufferSize());
-			}
-		}
-	}
-
-	/**
-	 * merge only properties that are not part of retry config if any match the conditions of merge
-	 *
-	 * @param baseProperties     base config properties
-	 * @param instanceProperties instance properties
-	 */
-	public static void mergePropertiesIfAny(BulkheadConfigurationProperties.InstanceProperties baseProperties, BulkheadConfigurationProperties.InstanceProperties instanceProperties) {
-		if (instanceProperties.getEventConsumerBufferSize() == null) {
-			if (baseProperties.getEventConsumerBufferSize() != null) {
-				instanceProperties.setEventConsumerBufferSize(baseProperties.getEventConsumerBufferSize());
-			}
-		}
-	}
-
-	/**
-	 * merge only properties that are not part of retry config if any match the conditions of merge
-	 *
-	 * @param baseProperties     base config properties
-	 * @param instanceProperties instance properties
-	 */
-	public static void mergePropertiesIfAny(RateLimiterConfigurationProperties.InstanceProperties baseProperties, RateLimiterConfigurationProperties.InstanceProperties instanceProperties) {
-		if (instanceProperties.getRegisterHealthIndicator() == null) {
-			if (baseProperties.getRegisterHealthIndicator() != null) {
-				instanceProperties.setRegisterHealthIndicator(baseProperties.getRegisterHealthIndicator());
-			}
-		}
-		if (instanceProperties.getSubscribeForEvents() == null) {
-			if (baseProperties.getSubscribeForEvents() != null) {
-				instanceProperties.setSubscribeForEvents(baseProperties.getSubscribeForEvents());
-			}
-		}
-		if (instanceProperties.getEventConsumerBufferSize() == null) {
-			if (baseProperties.getEventConsumerBufferSize() != null) {
-				instanceProperties.setEventConsumerBufferSize(baseProperties.getEventConsumerBufferSize());
-			}
-		}
-	}
-
-	/**
-	 * merge only properties that are not part of retry config if any match the conditions of merge
-	 *
-	 * @param baseProperties     base config properties
-	 * @param instanceProperties instance properties
-	 */
-	public static void mergePropertiesIfAny(RetryConfigurationProperties.InstanceProperties baseProperties, RetryConfigurationProperties.InstanceProperties instanceProperties) {
-		if (instanceProperties.getEnableExponentialBackoff() == null) {
-			if (baseProperties.getEnableExponentialBackoff() != null) {
-				instanceProperties.setEnableExponentialBackoff(baseProperties.getEnableExponentialBackoff());
-			}
-		}
-		if (instanceProperties.getEnableRandomizedWait() == null) {
-			if (baseProperties.getEnableRandomizedWait() != null) {
-				instanceProperties.setEnableRandomizedWait(baseProperties.getEnableRandomizedWait());
-			}
-		}
-		if (instanceProperties.getExponentialBackoffMultiplier() == null) {
-			if (baseProperties.getExponentialBackoffMultiplier() != null) {
-				instanceProperties.setExponentialBackoffMultiplier(baseProperties.getExponentialBackoffMultiplier());
-			}
+	public static void mergePropertiesIfAny(TimeLimiterConfigurationProperties.InstanceProperties baseProperties,
+											TimeLimiterConfigurationProperties.InstanceProperties instanceProperties) {
+		if (instanceProperties.getEventConsumerBufferSize() == null
+            && baseProperties.getEventConsumerBufferSize() != null) {
+            instanceProperties.setEventConsumerBufferSize(baseProperties.getEventConsumerBufferSize());
 		}
 	}
 

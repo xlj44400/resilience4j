@@ -21,11 +21,11 @@ import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CircuitBreakerMetricsDTO {
+
     private float failureRate;
     private int numberOfBufferedCalls;
     private int numberOfFailedCalls;
     private long numberOfNotPermittedCalls;
-    private int maxNumberOfBufferedCalls;
     private int numberOfSuccessfulCalls;
 
     CircuitBreakerMetricsDTO() {
@@ -36,7 +36,6 @@ public class CircuitBreakerMetricsDTO {
         this.numberOfBufferedCalls = metrics.getNumberOfBufferedCalls();
         this.numberOfFailedCalls = metrics.getNumberOfFailedCalls();
         this.numberOfNotPermittedCalls = metrics.getNumberOfNotPermittedCalls();
-        this.maxNumberOfBufferedCalls = metrics.getMaxNumberOfBufferedCalls();
         this.numberOfSuccessfulCalls = metrics.getNumberOfSuccessfulCalls();
     }
 
@@ -70,14 +69,6 @@ public class CircuitBreakerMetricsDTO {
 
     public void setNumberOfNotPermittedCalls(long numberOfNotPermittedCalls) {
         this.numberOfNotPermittedCalls = numberOfNotPermittedCalls;
-    }
-
-    public int getMaxNumberOfBufferedCalls() {
-        return maxNumberOfBufferedCalls;
-    }
-
-    public void setMaxNumberOfBufferedCalls(int maxNumberOfBufferedCalls) {
-        this.maxNumberOfBufferedCalls = maxNumberOfBufferedCalls;
     }
 
     public int getNumberOfSuccessfulCalls() {

@@ -18,17 +18,14 @@
  */
 package io.github.resilience4j.retry;
 
+import io.github.resilience4j.test.HelloWorldException;
 import io.github.resilience4j.test.HelloWorldService;
 import io.vavr.control.Try;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 
-import javax.xml.ws.WebServiceException;
-
-import static io.vavr.API.$;
-import static io.vavr.API.Case;
-import static io.vavr.API.Match;
+import static io.vavr.API.*;
 import static io.vavr.Predicates.instanceOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
@@ -43,7 +40,7 @@ public class RetryEventPublisherTest {
     private Retry retry;
 
     @Before
-    public void setUp(){
+    public void setUp() {
         helloWorldService = mock(HelloWorldService.class);
         logger = mock(Logger.class);
         retry = Retry.ofDefaults("testName");
@@ -59,14 +56,11 @@ public class RetryEventPublisherTest {
 
     @Test
     public void shouldConsumeOnSuccessEvent() {
-        // Given the HelloWorldService returns Hello world
         given(helloWorldService.returnHelloWorld())
-                .willThrow(new WebServiceException("BAM!"))
-                .willReturn("Hello world");
-
-        retry.getEventPublisher()
-            .onSuccess(event ->
-                    logger.info(event.getEventType().toString()));
+            .willThrow(new HelloWorldException())
+            .willReturn("Hello world");
+        retry.getEventPublisher().onSuccess(
+            event -> logger.info(event.getEventType().toString()));
 
         retry.executeSupplier(helloWorldService::returnHelloWorld);
 
@@ -77,11 +71,9 @@ public class RetryEventPublisherTest {
     @Test
     public void shouldConsumeOnRetryEvent() {
         given(helloWorldService.returnHelloWorld())
-                .willThrow(new WebServiceException("BAM!"));
-
-        retry.getEventPublisher()
-            .onRetry(event ->
-                    logger.info(event.getEventType().toString()));
+            .willThrow(new HelloWorldException());
+        retry.getEventPublisher().onRetry(
+            event -> logger.info(event.getEventType().toString()));
 
         Try.ofSupplier(Retry.decorateSupplier(retry, helloWorldService::returnHelloWorld));
 
@@ -91,13 +83,9 @@ public class RetryEventPublisherTest {
 
     @Test
     public void shouldConsumeOnErrorEvent() {
-        given(helloWorldService.returnHelloWorld())
-                .willThrow(new WebServiceException("BAM!"));
-
-        retry.getEventPublisher()
-            .onError(event ->
-                    logger.info(event.getEventType().toString()));
-
+        given(helloWorldService.returnHelloWorld()).willThrow(new HelloWorldException());
+        retry.getEventPublisher().onError(
+            event -> logger.info(event.getEventType().toString()));
 
         Try.ofSupplier(Retry.decorateSupplier(retry, helloWorldService::returnHelloWorld));
 
@@ -108,18 +96,15 @@ public class RetryEventPublisherTest {
     @Test
     public void shouldConsumeIgnoredErrorEvent() {
         given(helloWorldService.returnHelloWorld())
-                .willThrow(new WebServiceException("BAM!"));
-
+            .willThrow(new HelloWorldException());
         RetryConfig retryConfig = RetryConfig.custom()
-                .retryOnException(throwable -> Match(throwable).of(
-                        Case($(instanceOf(WebServiceException.class)), false),
-                        Case($(), true)))
-                .build();
+            .retryOnException(throwable -> Match(throwable).of(
+                Case($(instanceOf(HelloWorldException.class)), false),
+                Case($(), true)))
+            .build();
         retry = Retry.of("testName", retryConfig);
-
-        retry.getEventPublisher()
-            .onIgnoredError(event ->
-                    logger.info(event.getEventType().toString()));
+        retry.getEventPublisher().onIgnoredError(
+            event -> logger.info(event.getEventType().toString()));
 
         Try.ofSupplier(Retry.decorateSupplier(retry, helloWorldService::returnHelloWorld));
 

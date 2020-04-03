@@ -18,17 +18,7 @@
  */
 package io.github.resilience4j.circuitbreaker;
 
-import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Fork;
-import org.openjdk.jmh.annotations.Measurement;
-import org.openjdk.jmh.annotations.Mode;
-import org.openjdk.jmh.annotations.OutputTimeUnit;
-import org.openjdk.jmh.annotations.Scope;
-import org.openjdk.jmh.annotations.Setup;
-import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.Threads;
-import org.openjdk.jmh.annotations.Warmup;
+import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.profile.GCProfiler;
 import org.openjdk.jmh.runner.Runner;
@@ -53,6 +43,13 @@ public class CircuitBreakerBenchmark {
     private Supplier<String> protectedSupplierWithSb;
     private Supplier<String> stringSupplier;
 
+    public static void main(String[] args) throws RunnerException {
+        Options options = new OptionsBuilder()
+            .addProfiler(GCProfiler.class)
+            .build();
+        new Runner(options).run();
+    }
+
     @Setup
     public void setUp() {
         stringSupplier = () -> {
@@ -61,10 +58,7 @@ public class CircuitBreakerBenchmark {
         };
 
         CircuitBreaker circuitBreaker = CircuitBreaker.ofDefaults("testCircuitBreaker");
-        protectedSupplier = CircuitBreaker.decorateSupplier(circuitBreaker, stringSupplier);
-
-        CircuitBreaker circuitBreakerWithSubscriber = CircuitBreaker.ofDefaults("testCircuitBreakerWithSb");
-        protectedSupplierWithSb = CircuitBreaker.decorateSupplier(circuitBreakerWithSubscriber, stringSupplier);
+        protectedSupplier = circuitBreaker.decorateSupplier(stringSupplier);
     }
 
     @Benchmark
@@ -83,21 +77,5 @@ public class CircuitBreakerBenchmark {
     @Measurement(iterations = ITERATION_COUNT)
     public String protectedSupplier() {
         return protectedSupplier.get();
-    }
-
-    @Benchmark
-    @Fork(value = FORK_COUNT)
-    @Threads(value = THREAD_COUNT)
-    @Warmup(iterations = WARMUP_COUNT)
-    @Measurement(iterations = ITERATION_COUNT)
-    public String protectedSupplierWithSubscriber() {
-        return protectedSupplierWithSb.get();
-    }
-
-    public static void main(String[] args) throws RunnerException {
-        Options options = new OptionsBuilder()
-            .addProfiler(GCProfiler.class)
-            .build();
-        new Runner(options).run();
     }
 }

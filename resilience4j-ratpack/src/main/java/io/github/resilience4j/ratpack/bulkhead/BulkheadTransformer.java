@@ -32,12 +32,12 @@ public class BulkheadTransformer<T> extends AbstractTransformer<T> {
     }
 
     /**
-     * Create a new transformer that can be applied to the {@link ratpack.exec.Promise#transform(Function)} method.
-     * The Promised value will pass through the bulkhead, potentially causing it to throw error on reaching
-     * limit of concurrent calls.
+     * Create a new transformer that can be applied to the {@link ratpack.exec.Promise#transform(Function)}
+     * method. The Promised value will pass through the bulkhead, potentially causing it to throw
+     * error on reaching limit of concurrent calls.
      *
      * @param bulkhead the bulkhead to use
-     * @param <T>         the type of object
+     * @param <T>      the type of object
      * @return the transformer
      */
     public static <T> BulkheadTransformer<T> of(Bulkhead bulkhead) {
@@ -76,12 +76,12 @@ public class BulkheadTransformer<T> extends AbstractTransformer<T> {
 
                     @Override
                     public void complete() {
-                        bulkhead.onComplete();
+                        bulkhead.releasePermission();
                         down.complete();
                     }
                 });
             } else {
-                Throwable t = new BulkheadFullException(bulkhead);
+                Throwable t = BulkheadFullException.createBulkheadFullException(bulkhead);
                 handleRecovery(down, t);
             }
         };

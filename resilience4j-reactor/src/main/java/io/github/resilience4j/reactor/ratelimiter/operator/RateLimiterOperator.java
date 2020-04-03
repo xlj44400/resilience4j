@@ -17,6 +17,7 @@ package io.github.resilience4j.reactor.ratelimiter.operator;
 
 import io.github.resilience4j.ratelimiter.RateLimiter;
 import io.github.resilience4j.ratelimiter.RequestNotPermitted;
+import io.github.resilience4j.reactor.IllegalPublisherException;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -25,12 +26,14 @@ import java.util.function.UnaryOperator;
 
 
 /**
- * A RateLimiter operator which checks if a downstream subscriber/observer can acquire a permission to subscribe to an upstream Publisher.
- * Otherwise emits a {@link RequestNotPermitted} if the rate limit is exceeded.
+ * A RateLimiter operator which checks if a downstream subscriber/observer can acquire a permission
+ * to subscribe to an upstream Publisher. Otherwise emits a {@link RequestNotPermitted} if the rate
+ * limit is exceeded.
  *
  * @param <T> the value type
  */
 public class RateLimiterOperator<T> implements UnaryOperator<Publisher<T>> {
+
     private final RateLimiter rateLimiter;
 
     private RateLimiterOperator(RateLimiter rateLimiter) {
@@ -54,9 +57,8 @@ public class RateLimiterOperator<T> implements UnaryOperator<Publisher<T>> {
             return new MonoRateLimiter<>((Mono<? extends T>) publisher, rateLimiter);
         } else if (publisher instanceof Flux) {
             return new FluxRateLimiter<>((Flux<? extends T>) publisher, rateLimiter);
+        } else {
+            throw new IllegalPublisherException(publisher);
         }
-
-        throw new IllegalStateException("Publisher of type <" + publisher.getClass().getSimpleName()
-                + "> are not supported by this operator");
     }
 }

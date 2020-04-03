@@ -19,17 +19,27 @@
 package io.github.resilience4j.ratelimiter;
 
 /**
- * Exception that indicates that current thread was not able to acquire permission
- * from {@link RateLimiter}.
+ * Exception that indicates that current thread was not able to acquire permission from {@link
+ * RateLimiter}.
  */
 public class RequestNotPermitted extends RuntimeException {
 
+    private RequestNotPermitted(String message, boolean writableStackTrace) {
+        super(message, null, false, writableStackTrace);
+    }
+
     /**
-     * The constructor with a RateLimiter.
+     * Static method to construct a {@link RequestNotPermitted} with a RateLimiter.
      *
      * @param rateLimiter the RateLimiter.
      */
-    public RequestNotPermitted(RateLimiter rateLimiter) {
-        super(String.format("RateLimiter '%s' does not permit further calls", rateLimiter.getName()));
+    public static RequestNotPermitted createRequestNotPermitted(RateLimiter rateLimiter) {
+        boolean writableStackTraceEnabled = rateLimiter.getRateLimiterConfig()
+            .isWritableStackTraceEnabled();
+
+        String message = String
+            .format("RateLimiter '%s' does not permit further calls", rateLimiter.getName());
+
+        return new RequestNotPermitted(message, writableStackTraceEnabled);
     }
 }

@@ -22,7 +22,10 @@ import ratpack.exec.Downstream;
 import ratpack.exec.Upstream;
 import ratpack.func.Function;
 
+import java.util.concurrent.TimeUnit;
+
 public class CircuitBreakerTransformer<T> extends AbstractTransformer<T> {
+
     private CircuitBreaker circuitBreaker;
 
     private CircuitBreakerTransformer(CircuitBreaker circuitBreaker) {
@@ -30,9 +33,9 @@ public class CircuitBreakerTransformer<T> extends AbstractTransformer<T> {
     }
 
     /**
-     * Create a new transformer that can be applied to the {@link ratpack.exec.Promise#transform(Function)} method.
-     * The Promised value will pass through the circuitbreaker, potentially causing it to open if the thresholds
-     * for the circuit breaker are exceeded.
+     * Create a new transformer that can be applied to the {@link ratpack.exec.Promise#transform(Function)}
+     * method. The Promised value will pass through the circuitbreaker, potentially causing it to
+     * open if the thresholds for the circuit breaker are exceeded.
      *
      * @param circuitBreaker the circuit breaker to use
      * @param <T>            the type of object
@@ -64,24 +67,26 @@ public class CircuitBreakerTransformer<T> extends AbstractTransformer<T> {
                     @Override
                     public void success(T value) {
                         long durationInNanos = System.nanoTime() - start;
-                        circuitBreaker.onSuccess(durationInNanos);
+                        circuitBreaker.onSuccess(durationInNanos, TimeUnit.NANOSECONDS);
                         down.success(value);
                     }
 
                     @Override
                     public void error(Throwable throwable) {
                         long durationInNanos = System.nanoTime() - start;
-                        circuitBreaker.onError(durationInNanos, throwable);
+                        circuitBreaker.onError(durationInNanos, TimeUnit.NANOSECONDS, throwable);
                         handleRecovery(down, throwable);
                     }
 
                     @Override
                     public void complete() {
+                        circuitBreaker.releasePermission();
                         down.complete();
                     }
                 });
             } else {
-                Throwable t = new CallNotPermittedException(circuitBreaker);
+                Throwable t = CallNotPermittedException
+                    .createCallNotPermittedException(circuitBreaker);
                 handleRecovery(down, t);
             }
         };

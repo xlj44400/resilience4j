@@ -39,11 +39,11 @@ class FlowableBulkhead<T> extends Flowable<T> {
 
     @Override
     protected void subscribeActual(Subscriber<? super T> downstream) {
-        if(bulkhead.tryAcquirePermission()){
+        if (bulkhead.tryAcquirePermission()) {
             upstream.subscribe(new BulkheadSubscriber(downstream));
-        }else{
+        } else {
             downstream.onSubscribe(EmptySubscription.INSTANCE);
-            downstream.onError(new BulkheadFullException(bulkhead));
+            downstream.onError(BulkheadFullException.createBulkheadFullException(bulkhead));
         }
     }
 

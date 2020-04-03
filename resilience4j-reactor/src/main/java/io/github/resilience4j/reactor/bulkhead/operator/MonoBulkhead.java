@@ -23,6 +23,7 @@ import reactor.core.publisher.MonoOperator;
 import reactor.core.publisher.Operators;
 
 class MonoBulkhead<T> extends MonoOperator<T, T> {
+
     private final Bulkhead bulkhead;
 
     MonoBulkhead(Mono<? extends T> source, Bulkhead bulkhead) {
@@ -32,10 +33,10 @@ class MonoBulkhead<T> extends MonoOperator<T, T> {
 
     @Override
     public void subscribe(CoreSubscriber<? super T> actual) {
-        if(bulkhead.tryAcquirePermission()){
+        if (bulkhead.tryAcquirePermission()) {
             source.subscribe(new BulkheadSubscriber<>(bulkhead, actual, true));
-        }else{
-            Operators.error(actual, new BulkheadFullException(bulkhead));
+        } else {
+            Operators.error(actual, BulkheadFullException.createBulkheadFullException(bulkhead));
         }
     }
 }

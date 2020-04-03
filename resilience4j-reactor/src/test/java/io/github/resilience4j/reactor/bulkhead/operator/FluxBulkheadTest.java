@@ -19,7 +19,6 @@ import io.github.resilience4j.bulkhead.Bulkhead;
 import io.github.resilience4j.bulkhead.BulkheadFullException;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
@@ -35,8 +34,8 @@ public class FluxBulkheadTest {
     private Bulkhead bulkhead;
 
     @Before
-    public void setUp(){
-        bulkhead = Mockito.mock(Bulkhead.class);
+    public void setUp() {
+        bulkhead = mock(Bulkhead.class, RETURNS_DEEP_STUBS);
     }
 
     @Test
@@ -44,11 +43,11 @@ public class FluxBulkheadTest {
         given(bulkhead.tryAcquirePermission()).willReturn(true);
 
         StepVerifier.create(
-                Flux.just("Event 1", "Event 2")
-                        .compose(BulkheadOperator.of(bulkhead)))
-                .expectNext("Event 1")
-                .expectNext("Event 2")
-                .verifyComplete();
+            Flux.just("Event 1", "Event 2")
+                .compose(BulkheadOperator.of(bulkhead)))
+            .expectNext("Event 1")
+            .expectNext("Event 2")
+            .verifyComplete();
 
         verify(bulkhead, times(1)).onComplete();
     }
@@ -58,11 +57,11 @@ public class FluxBulkheadTest {
         given(bulkhead.tryAcquirePermission()).willReturn(true);
 
         StepVerifier.create(
-                Flux.error(new IOException("BAM!"))
-                        .compose(BulkheadOperator.of(bulkhead)))
-                .expectSubscription()
-                .expectError(IOException.class)
-                .verify(Duration.ofSeconds(1));
+            Flux.error(new IOException("BAM!"))
+                .compose(BulkheadOperator.of(bulkhead)))
+            .expectSubscription()
+            .expectError(IOException.class)
+            .verify(Duration.ofSeconds(1));
 
         verify(bulkhead, times(1)).onComplete();
     }
@@ -70,15 +69,14 @@ public class FluxBulkheadTest {
     @Test
     public void shouldEmitErrorWithBulkheadFullException() {
         given(bulkhead.tryAcquirePermission()).willReturn(false);
-
         bulkhead.tryAcquirePermission();
 
         StepVerifier.create(
-                Flux.just("Event")
-                        .compose(BulkheadOperator.of(bulkhead)))
-                .expectSubscription()
-                .expectError(BulkheadFullException.class)
-                .verify(Duration.ofSeconds(1));
+            Flux.just("Event")
+                .compose(BulkheadOperator.of(bulkhead)))
+            .expectSubscription()
+            .expectError(BulkheadFullException.class)
+            .verify(Duration.ofSeconds(1));
 
         verify(bulkhead, never()).onComplete();
     }
@@ -88,11 +86,11 @@ public class FluxBulkheadTest {
         given(bulkhead.tryAcquirePermission()).willReturn(false);
 
         StepVerifier.create(
-                Flux.error(new IOException("BAM!"))
-                        .compose(BulkheadOperator.of(bulkhead)))
-                .expectSubscription()
-                .expectError(BulkheadFullException.class)
-                .verify(Duration.ofSeconds(1));
+            Flux.error(new IOException("BAM!"))
+                .compose(BulkheadOperator.of(bulkhead)))
+            .expectSubscription()
+            .expectError(BulkheadFullException.class)
+            .verify(Duration.ofSeconds(1));
 
         verify(bulkhead, never()).onComplete();
     }
@@ -102,11 +100,11 @@ public class FluxBulkheadTest {
         given(bulkhead.tryAcquirePermission()).willReturn(false);
 
         StepVerifier.create(
-                Flux.error(new IOException("BAM!"), true)
-                        .compose(BulkheadOperator.of(bulkhead)))
-                .expectSubscription()
-                .expectError(BulkheadFullException.class)
-                .verify(Duration.ofSeconds(1));
+            Flux.error(new IOException("BAM!"), true)
+                .compose(BulkheadOperator.of(bulkhead)))
+            .expectSubscription()
+            .expectError(BulkheadFullException.class)
+            .verify(Duration.ofSeconds(1));
 
         verify(bulkhead, never()).onComplete();
     }
@@ -116,13 +114,29 @@ public class FluxBulkheadTest {
         given(bulkhead.tryAcquirePermission()).willReturn(true);
 
         StepVerifier.create(
-                Flux.just("Event")
-                        .delayElements(Duration.ofHours(1))
-                        .compose(BulkheadOperator.of(bulkhead)))
-                .expectSubscription()
-                .thenCancel()
-                .verify();
+            Flux.just("Event")
+                .delayElements(Duration.ofHours(1))
+                .compose(BulkheadOperator.of(bulkhead)))
+            .expectSubscription()
+            .thenCancel()
+            .verify();
 
         verify(bulkhead, times(1)).releasePermission();
+    }
+
+    @Test
+    public void shouldInvokeOnCompleteOnCancelWhenEventWasEmitted() {
+        given(bulkhead.tryAcquirePermission()).willReturn(true);
+
+        StepVerifier.create(
+            Flux.just("Event1", "Event2", "Event3")
+                .compose(BulkheadOperator.of(bulkhead)))
+            .expectSubscription()
+            .thenRequest(1)
+            .thenCancel()
+            .verify();
+
+        verify(bulkhead, never()).releasePermission();
+        verify(bulkhead, times(1)).onComplete();
     }
 }

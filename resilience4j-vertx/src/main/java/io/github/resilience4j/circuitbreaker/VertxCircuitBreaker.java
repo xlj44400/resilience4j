@@ -20,7 +20,10 @@ package io.github.resilience4j.circuitbreaker;
 
 import io.vertx.core.Future;
 
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+
+import static io.github.resilience4j.circuitbreaker.CallNotPermittedException.createCallNotPermittedException;
 
 /**
  * CircuitBreaker decorators for Vert.x
@@ -31,11 +34,12 @@ public interface VertxCircuitBreaker {
      * Decorates and executes the decorated Future.
      *
      * @param circuitBreaker the CircuitBreaker
-     * @param supplier the Future Supplier
-     * @param <T> the type of results returned by this Future
+     * @param supplier       the Future Supplier
+     * @param <T>            the type of results returned by this Future
      * @return a future which is decorated by a CircuitBreaker.
      */
-    static <T> Future<T> executeFuture(CircuitBreaker circuitBreaker, Supplier<Future<T>> supplier){
+    static <T> Future<T> executeFuture(CircuitBreaker circuitBreaker,
+        Supplier<Future<T>> supplier) {
         return decorateFuture(circuitBreaker, supplier).get();
     }
 
@@ -43,16 +47,17 @@ public interface VertxCircuitBreaker {
      * Returns a Future which is decorated by a CircuitBreaker.
      *
      * @param circuitBreaker the CircuitBreaker
-     * @param supplier the Future supplier
-     * @param <T> the type of the returned Future's result
+     * @param supplier       the Future supplier
+     * @param <T>            the type of the returned Future's result
      * @return a future which is decorated by a CircuitBreaker.
      */
-    static <T> Supplier<Future<T>> decorateFuture(CircuitBreaker circuitBreaker, Supplier<Future<T>> supplier){
+    static <T> Supplier<Future<T>> decorateFuture(CircuitBreaker circuitBreaker,
+        Supplier<Future<T>> supplier) {
         return () -> {
             final Future<T> future = Future.future();
 
             if (!circuitBreaker.tryAcquirePermission()) {
-                future.fail(new CallNotPermittedException(circuitBreaker));
+                future.fail(createCallNotPermittedException(circuitBreaker));
 
             } else {
                 long start = System.nanoTime();
@@ -60,16 +65,17 @@ public interface VertxCircuitBreaker {
                     supplier.get().setHandler(result -> {
                         long durationInNanos = System.nanoTime() - start;
                         if (result.failed()) {
-                            circuitBreaker.onError(durationInNanos, result.cause());
+                            circuitBreaker
+                                .onError(durationInNanos, TimeUnit.NANOSECONDS, result.cause());
                             future.fail(result.cause());
                         } else {
-                            circuitBreaker.onSuccess(durationInNanos);
+                            circuitBreaker.onSuccess(durationInNanos, TimeUnit.NANOSECONDS);
                             future.complete(result.result());
                         }
                     });
                 } catch (Exception exception) {
                     long durationInNanos = System.nanoTime() - start;
-                    circuitBreaker.onError(durationInNanos, exception);
+                    circuitBreaker.onError(durationInNanos, TimeUnit.NANOSECONDS, exception);
                     future.fail(exception);
                 }
             }

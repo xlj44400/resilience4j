@@ -15,12 +15,13 @@
  */
 package io.github.resilience4j.reactor.circuitbreaker.operator;
 
-import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import reactor.core.CoreSubscriber;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoOperator;
 import reactor.core.publisher.Operators;
+
+import static io.github.resilience4j.circuitbreaker.CallNotPermittedException.createCallNotPermittedException;
 
 class MonoCircuitBreaker<T> extends MonoOperator<T, T> {
 
@@ -33,10 +34,10 @@ class MonoCircuitBreaker<T> extends MonoOperator<T, T> {
 
     @Override
     public void subscribe(CoreSubscriber<? super T> actual) {
-        if(circuitBreaker.tryAcquirePermission()){
+        if (circuitBreaker.tryAcquirePermission()) {
             source.subscribe(new CircuitBreakerSubscriber<>(circuitBreaker, actual, true));
-        }else{
-            Operators.error(actual, new CallNotPermittedException(circuitBreaker));
+        } else {
+            Operators.error(actual, createCallNotPermittedException(circuitBreaker));
         }
     }
 }

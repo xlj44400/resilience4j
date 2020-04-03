@@ -15,20 +15,29 @@
  */
 package io.github.resilience4j.circuitbreaker.configure;
 
-
-import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 
-@Configuration
-public class CircuitBreakerConfigurationProperties extends io.github.resilience4j.common.circuitbreaker.configuration.CircuitBreakerConfigurationProperties {
+public class CircuitBreakerConfigurationProperties extends
+    io.github.resilience4j.common.circuitbreaker.configuration.CircuitBreakerConfigurationProperties {
 
-	/**
-	 * As of release 0.16.0 as we set an implicit spring aspect order now which is retry then circuit breaker then rate limiter then bulkhead
-	 */
-	public int getCircuitBreakerAspectOrder() {
-		return Ordered.LOWEST_PRECEDENCE - 2;
-	}
+    private int circuitBreakerAspectOrder = Ordered.LOWEST_PRECEDENCE - 3;
 
+    /**
+     * As of release 0.16.0 as we set an implicit spring aspect order now which is retry then
+     * circuit breaker then rate limiter then bulkhead but user can override it still if he has
+     * different use case but bulkhead will be first aspect all the time due to the implicit order
+     * we have it for bulkhead
+     */
+    public int getCircuitBreakerAspectOrder() {
+        return circuitBreakerAspectOrder;
+    }
+
+    /**
+     * @param circuitBreakerAspectOrder circuit breaker aspect order
+     */
+    public void setCircuitBreakerAspectOrder(int circuitBreakerAspectOrder) {
+        this.circuitBreakerAspectOrder = circuitBreakerAspectOrder;
+    }
 
 
 }

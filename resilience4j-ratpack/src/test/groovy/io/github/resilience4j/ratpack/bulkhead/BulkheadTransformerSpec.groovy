@@ -20,17 +20,14 @@ import io.github.resilience4j.bulkhead.BulkheadConfig
 import io.github.resilience4j.bulkhead.BulkheadFullException
 import ratpack.exec.Blocking
 import ratpack.exec.ExecResult
+import ratpack.exec.Promise
 import ratpack.test.exec.ExecHarness
 import spock.lang.AutoCleanup
 import spock.lang.Shared
 import spock.lang.Specification
 
 import java.time.Duration
-import java.util.concurrent.Callable
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicInteger
 
 class BulkheadTransformerSpec extends Specification {
@@ -51,7 +48,7 @@ class BulkheadTransformerSpec extends Specification {
                 times.getAndIncrement();
                 "s"
             }
-            .transform(transformer)
+                .transform(transformer)
         }
 
         then:
@@ -75,7 +72,7 @@ class BulkheadTransformerSpec extends Specification {
                 times.getAndIncrement();
                 "r1"
             }
-            .transform(transformer)
+                .transform(transformer)
         }
 
         and:
@@ -84,7 +81,7 @@ class BulkheadTransformerSpec extends Specification {
                 times.getAndIncrement();
                 "r2"
             }
-            .transform(transformer)
+                .transform(transformer)
         }
 
         then:
@@ -117,7 +114,7 @@ class BulkheadTransformerSpec extends Specification {
                 times.getAndIncrement();
                 throw new RuntimeException("Expected")
             }
-            .transform(transformer)
+                .transform(transformer)
         }
 
         and:
@@ -126,7 +123,7 @@ class BulkheadTransformerSpec extends Specification {
                 times.getAndIncrement();
                 "r2"
             }
-            .transform(transformer)
+                .transform(transformer)
         }
 
         then:
@@ -145,6 +142,53 @@ class BulkheadTransformerSpec extends Specification {
 
         and:
         times.get() == 2
+    }
+
+    def "transformer can be reused multiple times when upstream onError is handled"() {
+        given:
+        def bulkhead = buildBulkhead()
+        BulkheadTransformer<String> transformer = BulkheadTransformer.of(bulkhead)
+
+        and: "setup an event listener to track the number of onCallFinish"
+        def bulkheadEvents = bulkhead.getEventPublisher()
+        AtomicInteger timesOnCallFinished = new AtomicInteger(0)
+        bulkheadEvents.onCallFinished({ timesOnCallFinished.getAndIncrement() })
+
+
+        when: "The upstream has an error, but is swallowed by `onError`"
+        def r1 = ExecHarness.yieldSingle {
+            Blocking.<String> get {
+                throw new RuntimeException("Expected")
+            }
+                .onError { e -> Promise.value("not foo") }
+                .transform(transformer)
+        }
+
+        and: ""
+        def r2 = ExecHarness.yieldSingle {
+            Blocking.<String> get {
+                "r2"
+            }
+                .transform(transformer)
+        }
+
+        then:
+        with(r1) {
+            value == null
+            !error
+            throwable == null
+        }
+
+        and:
+        with(r2) {
+            value == "r2"
+            !error
+            throwable == null
+        }
+
+        and:
+        timesOnCallFinished.get() == 1
+
     }
 
     def "exception is thrown when execution is blocked with one execution"() {
@@ -166,7 +210,7 @@ class BulkheadTransformerSpec extends Specification {
                     times.getAndIncrement()
                     "r"
                 }
-                .transform(transformer)
+                    .transform(transformer)
             }
         } as Callable<ExecResult<String>>)
 
@@ -176,7 +220,7 @@ class BulkheadTransformerSpec extends Specification {
             Blocking.<String> get {
                 assert false: "Should never be called"
             }
-            .transform(transformer)
+                .transform(transformer)
         }
 
         then:
@@ -201,7 +245,9 @@ class BulkheadTransformerSpec extends Specification {
     def "recovery function is called when execution is blocked"() {
         given:
         def bulkhead = buildBulkhead()
-        BulkheadTransformer<String> transformer = BulkheadTransformer.of(bulkhead).recover { "recover" }
+        BulkheadTransformer<String> transformer = BulkheadTransformer.of(bulkhead).recover {
+            "recover"
+        }
         AtomicInteger times = new AtomicInteger(0)
 
         and:
@@ -217,7 +263,7 @@ class BulkheadTransformerSpec extends Specification {
                     times.getAndIncrement()
                     "r"
                 }
-                .transform(transformer)
+                    .transform(transformer)
             }
         } as Callable<ExecResult<String>>)
 
@@ -227,7 +273,7 @@ class BulkheadTransformerSpec extends Specification {
             Blocking.<String> get {
                 assert false: "Should never be called"
             }
-            .transform(transformer)
+                .transform(transformer)
         }
 
         then:
@@ -250,9 +296,9 @@ class BulkheadTransformerSpec extends Specification {
 
     def buildBulkhead() {
         def config = BulkheadConfig.custom()
-                .maxConcurrentCalls(1)
-                .maxWaitDuration(Duration.ZERO)
-                .build()
+            .maxConcurrentCalls(1)
+            .maxWaitDuration(Duration.ZERO)
+            .build()
         Bulkhead.of("test", config)
     }
 }

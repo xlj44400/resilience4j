@@ -19,7 +19,6 @@ import io.github.resilience4j.ratelimiter.RateLimiter;
 import io.github.resilience4j.ratelimiter.RequestNotPermitted;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -27,14 +26,16 @@ import java.io.IOException;
 import java.time.Duration;
 
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.mock;
 
 public class MonoRateLimiterTest {
 
     private RateLimiter rateLimiter;
 
     @Before
-    public void setUp(){
-        rateLimiter = Mockito.mock(RateLimiter.class);
+    public void setUp() {
+        rateLimiter = mock(RateLimiter.class, RETURNS_DEEP_STUBS);
     }
 
     @Test
@@ -42,10 +43,10 @@ public class MonoRateLimiterTest {
         given(rateLimiter.reservePermission()).willReturn(Duration.ofSeconds(0).toNanos());
 
         StepVerifier.create(
-                Mono.just("Event")
-                        .compose(RateLimiterOperator.of(rateLimiter)))
-                .expectNext("Event")
-                .verifyComplete();
+            Mono.just("Event")
+                .compose(RateLimiterOperator.of(rateLimiter)))
+            .expectNext("Event")
+            .verifyComplete();
     }
 
     @Test
@@ -53,24 +54,24 @@ public class MonoRateLimiterTest {
         given(rateLimiter.reservePermission()).willReturn(Duration.ofSeconds(0).toNanos());
 
         StepVerifier.create(
-                Mono.error(new IOException("BAM!"))
-                        .compose(RateLimiterOperator.of(rateLimiter)))
-                .expectSubscription()
-                .expectError(IOException.class)
-                .verify(Duration.ofSeconds(1));
+            Mono.error(new IOException("BAM!"))
+                .compose(RateLimiterOperator.of(rateLimiter)))
+            .expectSubscription()
+            .expectError(IOException.class)
+            .verify(Duration.ofSeconds(1));
     }
 
     @Test
     public void shouldDelaySubscription() {
-        given(rateLimiter.reservePermission()).willReturn(Duration.ofSeconds(2).toNanos());
+        given(rateLimiter.reservePermission()).willReturn(Duration.ofMillis(50).toNanos());
 
         StepVerifier.create(
-                Mono.error(new IOException("BAM!"))
-                        .log()
-                        .compose(RateLimiterOperator.of(rateLimiter)))
-                .expectSubscription()
-                .expectError(IOException.class)
-                .verify(Duration.ofSeconds(3));
+            Mono.error(new IOException("BAM!"))
+                .log()
+                .compose(RateLimiterOperator.of(rateLimiter)))
+            .expectSubscription()
+            .expectError(IOException.class)
+            .verify(Duration.ofMillis(150));
     }
 
 
@@ -79,11 +80,11 @@ public class MonoRateLimiterTest {
         given(rateLimiter.reservePermission()).willReturn(-1L);
 
         StepVerifier.create(
-                Mono.just("Event")
-                        .compose(RateLimiterOperator.of(rateLimiter)))
-                .expectSubscription()
-                .expectError(RequestNotPermitted.class)
-                .verify(Duration.ofSeconds(1));
+            Mono.just("Event")
+                .compose(RateLimiterOperator.of(rateLimiter)))
+            .expectSubscription()
+            .expectError(RequestNotPermitted.class)
+            .verify(Duration.ofSeconds(1));
     }
 
     @Test
@@ -91,9 +92,9 @@ public class MonoRateLimiterTest {
         given(rateLimiter.reservePermission()).willReturn(-1L);
 
         StepVerifier.create(
-                Mono.error(new IOException("BAM!"))
-                        .compose(RateLimiterOperator.of(rateLimiter)))
-                .expectError(RequestNotPermitted.class)
-                .verify(Duration.ofSeconds(1));
+            Mono.error(new IOException("BAM!"))
+                .compose(RateLimiterOperator.of(rateLimiter)))
+            .expectError(RequestNotPermitted.class)
+            .verify(Duration.ofSeconds(1));
     }
 }

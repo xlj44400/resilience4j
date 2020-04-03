@@ -31,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest(classes = TestApplication.class)
 public class CircuitBreakerRecoveryTest {
+
     @Autowired
     @Qualifier("circuitBreakerDummyService")
     TestDummyService testDummyService;
@@ -42,7 +43,8 @@ public class CircuitBreakerRecoveryTest {
 
     @Test
     public void testAsyncRecovery() throws Exception {
-        assertThat(testDummyService.async().toCompletableFuture().get(5, TimeUnit.SECONDS)).isEqualTo("recovered");
+        assertThat(testDummyService.async().toCompletableFuture().get(5, TimeUnit.SECONDS))
+            .isEqualTo("recovered");
     }
 
     @Test
@@ -78,5 +80,10 @@ public class CircuitBreakerRecoveryTest {
     @Test
     public void testFlowableRecovery() {
         assertThat(testDummyService.flowable().blockingFirst()).isEqualTo("recovered");
+    }
+
+    @Test
+    public void testSpelRecovery() {
+        assertThat(testDummyService.spelSync()).isEqualTo("recovered");
     }
 }

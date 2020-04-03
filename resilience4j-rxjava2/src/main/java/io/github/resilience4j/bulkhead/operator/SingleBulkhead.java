@@ -34,11 +34,11 @@ class SingleBulkhead<T> extends Single<T> {
 
     @Override
     protected void subscribeActual(SingleObserver<? super T> downstream) {
-        if(bulkhead.tryAcquirePermission()){
+        if (bulkhead.tryAcquirePermission()) {
             upstream.subscribe(new BulkheadSingleObserver(downstream));
-        }else{
+        } else {
             downstream.onSubscribe(EmptyDisposable.INSTANCE);
-            downstream.onError(new BulkheadFullException(bulkhead));
+            downstream.onError(BulkheadFullException.createBulkheadFullException(bulkhead));
         }
     }
 

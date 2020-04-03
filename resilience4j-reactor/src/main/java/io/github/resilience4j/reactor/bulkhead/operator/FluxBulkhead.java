@@ -33,10 +33,10 @@ class FluxBulkhead<T> extends FluxOperator<T, T> {
 
     @Override
     public void subscribe(CoreSubscriber<? super T> actual) {
-        if(bulkhead.tryAcquirePermission()){
+        if (bulkhead.tryAcquirePermission()) {
             source.subscribe(new BulkheadSubscriber<>(bulkhead, actual, false));
-        }else{
-            Operators.error(actual, new BulkheadFullException(bulkhead));
+        } else {
+            Operators.error(actual, BulkheadFullException.createBulkheadFullException(bulkhead));
         }
     }
 

@@ -20,6 +20,7 @@ import io.reactivex.internal.subscriptions.SubscriptionHelper;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.reactivex.internal.subscriptions.SubscriptionHelper.CANCELLED;
@@ -28,6 +29,7 @@ import static java.util.Objects.requireNonNull;
 public abstract class AbstractSubscriber<T> implements Subscriber<T>, Subscription, Disposable {
 
     protected final Subscriber<? super T> downstreamSubscriber;
+    protected final AtomicBoolean eventWasEmitted = new AtomicBoolean(false);
     private final AtomicReference<Subscription> subscription = new AtomicReference<>();
 
     protected AbstractSubscriber(Subscriber<? super T> downstreamSubscriber) {
@@ -43,7 +45,8 @@ public abstract class AbstractSubscriber<T> implements Subscriber<T>, Subscripti
 
     @Override
     public void onNext(T value) {
-        if(!isDisposed()){
+        if (!isDisposed()) {
+            eventWasEmitted.set(true);
             downstreamSubscriber.onNext(value);
         }
 
@@ -77,7 +80,7 @@ public abstract class AbstractSubscriber<T> implements Subscriber<T>, Subscripti
 
     @Override
     public void cancel() {
-        if(SubscriptionHelper.cancel(subscription)){
+        if (SubscriptionHelper.cancel(subscription)) {
             hookOnCancel();
         }
     }
